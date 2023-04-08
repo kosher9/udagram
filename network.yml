@@ -137,6 +137,10 @@ Resources:
         FromPort: 80
         ToPort: 80
         CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+        CidrIp: 0.0.0.0/0
 
   WebServerSecGroup:
     Type: AWS::EC2::SecurityGroup
@@ -144,6 +148,10 @@ Resources:
       GroupDescription: Allow http to our hosts and SSH from local only
       VpcId: !Ref VPC
       SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
       - IpProtocol: tcp
         FromPort: 8080
         ToPort: 8080
@@ -164,11 +172,14 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          sudo apt-get update -y
-          sudo apt-get install apache2 -y
-          sudo systemctl start apache2.service
+          apt-get update -y
+          apt-get install unzip -y
+          apt-get install awscli -y
+          unzip awscli
+          apt-get install apache2 -y
+          systemctl start apache2.service
           cd /var/www/html
-          echo "it works! Udagram, Udacity" > index.html
+          aws s3 cp s3://bucket-web-1/index.html > index.html 
       # ToDo: AMI ID of Ubuntu Linux machine. Too get one, try creating a VM from the web console. 
       ImageId: ami-007855ac798b5175e
       # ToDo: Change the key-pair name, as applicable to you. 
@@ -180,6 +191,47 @@ Resources:
       - DeviceName: "/dev/sdk"
         Ebs:
           VolumeSize: '10'
+
+# instace profile contains the IAM Role name(s) that we want to associate to our auto scaling EC2 Servers
+# creating a Role called UdagramS3ReadOnlyEC2 
+  ProfileRoleForApp:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - Ref: UdagramS3ReadOnlyEC2
+
+  # # S3 Bucket Role
+  UdagramS3ReadOnlyEC2:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+
+#allows you to manage access to specific Amazon S3 storage resources
+  S3ReadOnlyBucketPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: S3ReadOnlyAccess
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:Get*
+              - S3:List*
+              - s3-object-lambda:Get*
+              - s3-object-lambda:List*
+            Resource: "*"
+      Roles:
+        - Ref: UdagramS3ReadOnlyEC2
 
   WebAppGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
