@@ -1,0 +1,19 @@
+
+[
+	{
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "UdagramProject"
+	 },
+	 {
+		"ParameterKey": "LaunchTemplateVersionNumber",
+		"ParameterValue": "1"
+	 },
+	 {
+		"ParameterKey": "AMIId",
+		"ParameterValue": "ami-007855ac798b5175e"
+	 },
+	 {
+		"ParameterKey": "InstanceType",
+		"ParameterValue": "t3.medium"
+	 }
+]
